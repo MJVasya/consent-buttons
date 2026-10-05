@@ -4,9 +4,13 @@ A universal browser extension (Manifest V3) that gives you one-click cookie choi
 on any website. Source: https://github.com/MJVasya/consent-buttons (MIT).
 
 - **Accept all** — clicks the site's own "accept all" button.
-- **Essential only** — clicks "reject all"; if the site offers no reject button it
-  opens the preferences dialog, switches off every optional category (analytics,
-  marketing, …) while leaving strictly-necessary ones alone, and saves.
+- **Reject all** — clicks the site's own "reject"/"decline" button directly.
+  Fast and blunt; if the site offers no reject button it reports that instead
+  of digging through dialogs.
+- **Essential only** — the thorough path: tries "reject all" first; if the site
+  offers no reject button it opens the preferences dialog, switches off every
+  optional category (analytics, marketing, …) while leaving strictly-necessary
+  ones alone, and saves.
 
 A small floating pill appears automatically whenever a cookie banner is detected.
 The toolbar popup offers the same two buttons for the current tab.
@@ -63,7 +67,9 @@ deliberately block fully silent installs, so 2–3 clicks remain yours):
    cookie-consent context.
 2. **Accept all** — clicks the site's accept button (known selector first, then
    best text match).
-3. **Essential only** — tries the site's reject button first; otherwise opens
+3. **Reject all** — clicks the site's reject/decline button directly
+   (known selector, then text match). Never opens preference dialogs.
+4. **Essential only** — tries the site's reject button first; otherwise opens
    "manage preferences", clicks any in-dialog reject, or unchecks every optional
    toggle (skipping anything labelled necessary/essential/required) and saves.
 

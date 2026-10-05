@@ -27,7 +27,13 @@
     setStatus('Working…');
     try {
       const r = await send('consent-action', action);
-      setStatus(r && r.ok ? 'Done ✓' : 'No consent button found on this page.');
+      if (r && r.ok) {
+        setStatus('Done ✓');
+      } else if (action === 'reject') {
+        setStatus('No "reject" button found — try "Essential only".');
+      } else {
+        setStatus('No consent button found on this page.');
+      }
     } catch (e) {
       setStatus(e && e.code === 'system'
         ? 'Can’t run here — browser system pages are off-limits.'
@@ -37,6 +43,7 @@
 
   $('accept').addEventListener('click', () => run('accept'));
   $('reject').addEventListener('click', () => run('reject'));
+  $('essential').addEventListener('click', () => run('essential'));
 
   // Show a hint about whether a banner was detected.
   (async () => {

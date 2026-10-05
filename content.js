@@ -310,19 +310,26 @@ function uncheckOptional() {
   return n;
 }
 
-async function rejectEssential() {
-  /* 1. Known CMP "reject all" buttons. */
+/* "Reject all": click the site's own reject/decline button directly.
+ * Unlike rejectEssential() it never opens preference dialogs — fast and blunt. */
+async function rejectAll() {
   if (clickFirstVisible(KNOWN_SEL.reject)) return { ok: true, how: 'cmp-reject' };
-  /* 2. Text-matched reject buttons. */
-  let c = best(textCandidates('reject'));
+  const c = best(textCandidates('reject'));
   if (c) { clickEl(c.el); return { ok: true, how: 'text-reject', label: c.t }; }
+  return { ok: false, how: 'no-reject-button' };
+}
+
+async function rejectEssential() {
+  /* 1-2. Direct reject, when the site offers one. */
+  const r = await rejectAll();
+  if (r.ok) return r;
   /* 3. Open preferences, then reject-all / uncheck-optional / save. */
   const p = best(textCandidates('prefs'));
   if (p) {
     clickEl(p.el);
     await wait(1500);
     if (clickFirstVisible(KNOWN_SEL.reject)) return { ok: true, how: 'prefs-cmp-reject' };
-    c = best(textCandidates('reject'));
+    const c = best(textCandidates('reject'));
     if (c) { clickEl(c.el); return { ok: true, how: 'prefs-text-reject', label: c.t }; }
     const toggled = uncheckOptional();
     await wait(400);
@@ -359,18 +366,20 @@ function ensurePanel() {
     '.cb-bar{display:flex;align-items:center;gap:8px;background:rgba(28,28,30,.96);' +
     'color:#fff;padding:8px 10px 8px 14px;border-radius:999px;' +
     'box-shadow:0 8px 30px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);}' +
-    '.cb-label{font-size:12px;opacity:.75;white-space:nowrap;}' +
-    '.cb-bar button{border:0;border-radius:999px;padding:8px 14px;font-size:13px;' +
+    '.cb-label{font-size:14px;white-space:nowrap;}' +
+    '.cb-bar button{border:0;border-radius:999px;padding:7px 12px;font-size:12px;' +
     'font-weight:700;cursor:pointer;white-space:nowrap;}' +
     '.cb-accept{background:#30d158;color:#fff;}' +
-    '.cb-reject{background:#48484a;color:#fff;}' +
-    '.cb-x{background:transparent;color:#aaa;font-size:16px;padding:8px 10px;}' +
+    '.cb-reject{background:#ff453a;color:#fff;}' +
+    '.cb-essential{background:#48484a;color:#fff;}' +
+    '.cb-x{background:transparent;color:#aaa;font-size:16px;padding:7px 10px;}' +
     '.cb-bar button:active{transform:scale(.96);}' +
     '</style>' +
     '<div class="cb-wrap" style="display:none"><div class="cb-bar">' +
-    '<span class="cb-label">🍪 Cookies?</span>' +
+    '<span class="cb-label">🍪</span>' +
     '<button class="cb-accept" data-act="accept">Accept all</button>' +
-    '<button class="cb-reject" data-act="reject">Essential only</button>' +
+    '<button class="cb-reject" data-act="reject">Reject all</button>' +
+    '<button class="cb-essential" data-act="essential">Essential only</button>' +
     '<button class="cb-x" data-act="hide" aria-label="Dismiss">×</button>' +
     '</div></div>';
   const wrap = shadow.querySelector('.cb-wrap');
@@ -385,7 +394,9 @@ function ensurePanel() {
         return;
       }
       b.textContent = '…';
-      const r = act === 'accept' ? await acceptAll() : await rejectEssential();
+      const r = act === 'accept' ? await acceptAll()
+              : act === 'reject' ? await rejectAll()
+              : await rejectEssential();
       b.textContent = r.ok ? 'Done ✓' : 'Not found';
       try { sessionStorage.setItem('cb-done', '1'); } catch (e) { /* noop */ }
       setTimeout(() => { wrap.style.display = 'none'; panelVisible = false; }, 1100);
@@ -433,7 +444,9 @@ if (HAS_API) {
       return true;
     }
     if (msg.type === 'consent-action') {
-      const run = msg.action === 'accept' ? acceptAll() : rejectEssential();
+      const run = msg.action === 'accept' ? acceptAll()
+                : msg.action === 'reject' ? rejectAll()
+                : rejectEssential();
       run.then((r) => {
         refreshSoon();
         if (TOP) sendResponse(r);
@@ -446,6 +459,6 @@ if (HAS_API) {
 
 /* Test hook: only exposed on ?consenttest=1 pages (dev/QA only). */
 if (TEST) {
-  window.__consent = { acceptAll, rejectEssential, banner: findBanner, textCandidates };
+  window.__consent = { acceptAll, rejectAll, rejectEssential, banner: findBanner, textCandidates };
 }
 })();
