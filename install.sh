@@ -3,8 +3,8 @@
 #
 # Chromium browsers (Chrome / Edge / Brave / …) deliberately block silent
 # extension installs, so no script can do the last two clicks for you.
-# This script automates everything else: it finds your browser, opens the
-# extensions page, and walks you through the finish.
+# This script lists the browsers it finds, opens the extensions page in the
+# one you pick, and walks you through the finish.
 #
 # Usage:  sh install.sh        (or double-click install.command on macOS)
 set -u
@@ -16,47 +16,49 @@ if [ ! -f "$DIR/manifest.json" ]; then
   exit 1
 fi
 
-OS="$(uname)"
-BROWSER=""; OPEN_CMD=""; EXT_PAGE=""
+N=0
+add() { N=$((N+1)); eval "NAME_$N=\"\$1\"; OPEN_$N=\"\$2\"; PAGE_$N=\"\$3\""; }
 
+OS="$(uname)"
 if [ "$OS" = "Darwin" ]; then
-  if [ -d "/Applications/Google Chrome.app" ]; then
-    BROWSER="Google Chrome"; OPEN_CMD='open -a "Google Chrome"'; EXT_PAGE="chrome://extensions"
-  elif [ -d "/Applications/Brave Browser.app" ]; then
-    BROWSER="Brave"; OPEN_CMD='open -a "Brave Browser"'; EXT_PAGE="brave://extensions"
-  elif [ -d "/Applications/Microsoft Edge.app" ]; then
-    BROWSER="Microsoft Edge"; OPEN_CMD='open -a "Microsoft Edge"'; EXT_PAGE="edge://extensions"
-  elif [ -d "/Applications/Arc.app" ]; then
-    BROWSER="Arc"; OPEN_CMD='open -a "Arc"'; EXT_PAGE="arc://extensions"
-  elif [ -d "/Applications/Firefox.app" ]; then
-    BROWSER="Firefox"; OPEN_CMD='open -a "Firefox"'; EXT_PAGE="about:debugging#/runtime/this-firefox"
-  fi
+  [ -d "/Applications/Google Chrome.app" ]  && add "Google Chrome"  'open -a "Google Chrome"'  "chrome://extensions"
+  [ -d "/Applications/Brave Browser.app" ]  && add "Brave"          'open -a "Brave Browser"'   "brave://extensions"
+  [ -d "/Applications/Microsoft Edge.app" ] && add "Microsoft Edge" 'open -a "Microsoft Edge"'  "edge://extensions"
+  [ -d "/Applications/Arc.app" ]             && add "Arc"            'open -a "Arc"'             "arc://extensions"
+  [ -d "/Applications/Firefox.app" ]         && add "Firefox"        'open -a "Firefox"'        "about:debugging#/runtime/this-firefox"
 else
-  if command -v google-chrome >/dev/null 2>&1; then
-    BROWSER="Google Chrome"; OPEN_CMD='google-chrome'; EXT_PAGE="chrome://extensions"
-  elif command -v brave-browser >/dev/null 2>&1; then
-    BROWSER="Brave"; OPEN_CMD='brave-browser'; EXT_PAGE="brave://extensions"
-  elif command -v microsoft-edge >/dev/null 2>&1; then
-    BROWSER="Microsoft Edge"; OPEN_CMD='microsoft-edge'; EXT_PAGE="microsoft-edge://extensions"
-  elif command -v chromium >/dev/null 2>&1; then
-    BROWSER="Chromium"; OPEN_CMD='chromium'; EXT_PAGE="chrome://extensions"
-  elif command -v firefox >/dev/null 2>&1; then
-    BROWSER="Firefox"; OPEN_CMD='firefox'; EXT_PAGE="about:debugging#/runtime/this-firefox"
-  fi
+  command -v google-chrome >/dev/null 2>&1 && add "Google Chrome"  "google-chrome"  "chrome://extensions"
+  command -v brave-browser >/dev/null 2>&1 && add "Brave"          "brave-browser"  "brave://extensions"
+  command -v microsoft-edge >/dev/null 2>&1 && add "Microsoft Edge" "microsoft-edge" "microsoft-edge://extensions"
+  command -v chromium >/dev/null 2>&1      && add "Chromium"       "chromium"       "chrome://extensions"
+  command -v firefox >/dev/null 2>&1       && add "Firefox"        "firefox"        "about:debugging#/runtime/this-firefox"
 fi
 
 echo "🍪  Consent Buttons installer"
 echo "=============================="
-if [ -z "$BROWSER" ]; then
+if [ "$N" -eq 0 ]; then
   echo "No supported browser found."
   echo "Install Chrome, Edge, Brave or Firefox, then re-run this script."
   exit 1
 fi
-echo "Found: $BROWSER"
+
+if [ "$N" -eq 1 ]; then
+  CH=1
+else
+  echo "Found $N browsers:"
+  i=1
+  while [ $i -le "$N" ]; do eval "echo \"  \$i) \$NAME_$i\""; i=$((i+1)); done
+  printf "Install into which one? [1-%s]: " "$N"
+  read -r CH
+  case "$CH" in ''|*[!0-9]*) CH=1 ;; esac
+  if [ "$CH" -lt 1 ] || [ "$CH" -gt "$N" ]; then CH=1; fi
+fi
+eval "BROWSER=\"\$NAME_$CH\"; OPEN_CMD=\"\$OPEN_$CH\"; EXT_PAGE=\"\$PAGE_$CH\""
+
 echo ""
+echo "Using: $BROWSER"
 echo "Opening the extensions page…"
-# shellcheck disable=SC2086
-eval $OPEN_CMD "\"$EXT_PAGE\"" >/dev/null 2>&1 &
+eval "$OPEN_CMD \"$EXT_PAGE\"" >/dev/null 2>&1 &
 sleep 1
 
 if [ "$BROWSER" = "Firefox" ]; then
@@ -77,4 +79,6 @@ else
   echo "  3. Pin the 🍪 icon to the toolbar"
 fi
 echo ""
+echo "Tip: if you already loaded the extension before, skip the steps —"
+echo "just pin the 🍪 icon to the toolbar."
 echo "Done — enjoy one-click cookie choices."

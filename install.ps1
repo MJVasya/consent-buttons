@@ -14,7 +14,6 @@ if (-not (Test-Path (Join-Path $dir "manifest.json"))) {
   exit 1
 }
 
-$browser = $null; $exe = $null; $extPage = $null
 $candidates = @(
   @{ Name = "Google Chrome";  Paths = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
                                        "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe");
@@ -26,24 +25,40 @@ $candidates = @(
                                        "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe");
                                Page = "edge://extensions" }
 )
+$found = @()
 foreach ($c in $candidates) {
   foreach ($p in $c.Paths) {
-    if (Test-Path $p) { $browser = $c.Name; $exe = $p; $extPage = $c.Page; break }
+    if (Test-Path $p) {
+      $found += [pscustomobject]@{ Name = $c.Name; Exe = $p; Page = $c.Page }
+      break
+    }
   }
-  if ($browser) { break }
 }
 $firefox = "$env:ProgramFiles\Mozilla Firefox\firefox.exe"
-if (-not $browser -and (Test-Path $firefox)) {
-  $browser = "Firefox"; $exe = $firefox; $extPage = "about:debugging#/runtime/this-firefox"
+if (Test-Path $firefox) {
+  $found += [pscustomobject]@{ Name = "Firefox"; Exe = $firefox; Page = "about:debugging#/runtime/this-firefox" }
 }
 
 Write-Host "`n🍪  Consent Buttons installer" -ForegroundColor Green
 Write-Host "=============================="
-if (-not $browser) {
+if ($found.Count -eq 0) {
   Write-Host "No supported browser found." -ForegroundColor Red
   Write-Host "Install Chrome, Edge, Brave or Firefox, then re-run this script."
   exit 1
 }
+
+if ($found.Count -eq 1) {
+  $sel = $found[0]
+} else {
+  Write-Host "Found $($found.Count) browsers:"
+  for ($i = 0; $i -lt $found.Count; $i++) {
+    Write-Host "  $($i + 1)) $($found[$i].Name)"
+  }
+  $ch = Read-Host "Install into which one? [1-$($found.Count)]"
+  if ($ch -notmatch '^\d+$' -or [int]$ch -lt 1 -or [int]$ch -gt $found.Count) { $ch = 1 }
+  $sel = $found[[int]$ch - 1]
+}
+$browser = $sel.Name; $exe = $sel.Exe; $extPage = $sel.Page
 Write-Host "Found: $browser`n"
 Write-Host "Opening the extensions page…"
 Start-Process $exe $extPage
@@ -71,3 +86,5 @@ Finish in $browser (3 clicks):
 "@
 }
 Write-Host "Done - enjoy one-click cookie choices.`n"
+Write-Host "Tip: if you already loaded the extension before, skip the steps -"
+Write-Host "just pin the cookie icon to the toolbar."

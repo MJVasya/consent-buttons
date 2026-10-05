@@ -27,9 +27,10 @@ so the same code runs everywhere.
 ## Install
 
 ### Guided installer (easiest)
-Unzip, then run the installer for your OS — it finds your browser, opens the
-extensions page, and walks you through the final clicks (Chrome/Edge/Brave
-deliberately block fully silent installs, so 2–3 clicks remain yours):
+Unzip, then run the installer for your OS — it lists the browsers it finds,
+asks which one to use, opens the extensions page, and walks you through the
+final clicks (Chrome/Edge/Brave deliberately block fully silent installs,
+so 2–3 clicks remain yours):
 
 - macOS / Linux: `sh install.sh`
 - Windows: right-click `install.ps1` → Run with PowerShell
