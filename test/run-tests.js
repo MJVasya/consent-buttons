@@ -154,6 +154,22 @@ async function reset() {
   check('T9 pill has accept/reject/essential/hide', ['accept', 'reject', 'essential', 'hide'].every((a) => acts.includes(a)), acts.join(','));
   await reset();
 
+  // T10: GitHub-style radio dialog → Reject radios + Save changes
+  window.__testHelpers.showF();
+  await sleep(700);
+  const r10 = await window.__consent.rejectEssential();
+  await sleep(500);
+  const L10 = logLines();
+  const qr = (sel) => window.document.querySelector(sel);
+  check('T10 opened prefs (F:prefs)', L10.some((l) => l.startsWith('clicked: F:prefs')), L10.join(' | '));
+  check('T10 analytics set to Reject', qr('[data-log="F:r-analytics-reject"]').checked === true);
+  check('T10 analytics Accept off', qr('[data-log="F:r-analytics-accept"]').checked === false);
+  check('T10 ads set to Reject', qr('[data-log="F:r-ads-reject"]').checked === true);
+  check('T10 save clicked (F:save)', L10.some((l) => l.startsWith('clicked: F:save')), L10.join(' | '));
+  check('T10 dialog hidden after save', qr('#prefsF').style.display === 'none');
+  check('T10 result ok', r10 && r10.ok === true, JSON.stringify(r10));
+  await reset();
+
   const fails = results.filter((r) => r[0] === 'FAIL').length;
   console.log(`\n${results.length - fails}/${results.length} passed`);
   process.exit(fails ? 1 : 0);

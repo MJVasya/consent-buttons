@@ -83,6 +83,8 @@ const WORDS = {
   save: [ /* confirm button inside a preferences view */
     'save', 'confirm', 'save settings', 'save my preferences', 'save selection',
     'save choices', 'apply', 'apply selection', 'confirm choices', 'confirm my choices',
+    'save changes', 'save preferences', 'update preferences', 'save my choices',
+    'confirm selection',
     'speichern', 'auswahl speichern', 'einstellungen speichern', 'bestätigen',
     'enregistrer', 'sauvegarder', 'confirmer',
     'guardar', 'confirmar', 'guardar selección',
@@ -331,7 +333,7 @@ async function rejectEssential() {
     if (clickFirstVisible(KNOWN_SEL.reject)) return { ok: true, how: 'prefs-cmp-reject' };
     const c = best(textCandidates('reject'));
     if (c) { clickEl(c.el); return { ok: true, how: 'prefs-text-reject', label: c.t }; }
-    const toggled = uncheckOptional();
+    const toggled = uncheckOptional() + setRadiosOff();
     await wait(400);
     if (clickFirstVisible(KNOWN_SEL.save)) return { ok: true, how: 'prefs-cmp-save', toggled };
     const s = best(textCandidates('save'));
@@ -339,6 +341,48 @@ async function rejectEssential() {
     return { ok: false, how: 'prefs-no-save', toggled };
   }
   return { ok: false };
+}
+
+/* Radio "Accept / Reject" pairs, e.g. GitHub's "Manage cookie preferences".
+ * Selects the reject-side option of every optional category. */
+const RADIO_OFF_RX = /^(reject|decline|deny|refuse|disagree|opt[\s-]?out|disable|no|off|ablehnen|refuser|rechazar|rifiuta|weigeren|rejeitar|odrzu|отклонить|reddet|拒绝|拒否|거부)/;
+
+/* Nearest section heading above a toggle — guards "Strictly necessary"
+ * categories whose radios would otherwise look optional. */
+function groupContext(el) {
+  let n = el;
+  for (let i = 0; i < 6 && n && n !== document.body; i++) {
+    let s = n.previousElementSibling;
+    while (s) {
+      if (s.matches && s.matches('h1,h2,h3,h4,h5,h6,legend,[role="heading"]'))
+        return norm(s.textContent).slice(0, 120);
+      const h = s.querySelector ? s.querySelector('h1,h2,h3,h4,h5,h6,legend,[role="heading"]') : null;
+      if (h) return norm(h.textContent).slice(0, 120);
+      s = s.previousElementSibling;
+    }
+    n = n.parentElement;
+  }
+  return '';
+}
+
+function setRadiosOff() {
+  const groups = new Map();
+  document.querySelectorAll('input[type="radio"]').forEach((r, idx) => {
+    if (!isVisible(r) || r.disabled) return;
+    const key = r.name || r.id || ('idx' + idx);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  });
+  let n = 0;
+  for (const g of groups.values()) {
+    const labels = g.map(ownLabel).join(' ');
+    if (NECESSARY_RX.test(labels + ' ' + groupContext(g[0]))) continue;
+    const off = g.find((r) => RADIO_OFF_RX.test(ownLabel(r)));
+    if (!off || off.checked) continue;
+    off.click();
+    n++;
+  }
+  return n;
 }
 
 /* --------------------------- banner + floating UI ----------------------- */

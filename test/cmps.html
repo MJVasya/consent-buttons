@@ -73,6 +73,29 @@ The content script is included below via <code>&lt;script&gt;</code> to simulate
   <p>Nothing to show here. Just article text about baking cookies (the edible kind).</p>
 </div>
 
+<div class="scenario">
+  <h3>F. Radio-group preferences (GitHub-style)</h3>
+  <button onclick="showF()">Show banner</button>
+  <div id="bannerF" class="fakebanner" style="display:none; position:fixed; bottom:0; left:0; right:0;">
+    <p>We use cookies to improve your experience. <a href="#">Cookie Policy</a></p>
+    <button data-log="F:prefs" onclick="document.getElementById('prefsF').style.display='block'">Manage preferences</button>
+  </div>
+  <div id="prefsF" style="display:none; position:fixed; bottom:80px; left:10%; right:10%; background:#222; color:#eee; border:1px solid #888; border-radius:8px; padding:14px;">
+    <h4>Manage cookie preferences</h4>
+    <h5>Strictly necessary</h5>
+    <p>Always on. No choice here.</p>
+    <h5>Analytics</h5>
+    <label><input type="radio" name="f-analytics" data-log="F:r-analytics-accept" checked> Accept</label>
+    <label><input type="radio" name="f-analytics" data-log="F:r-analytics-reject"> Reject</label>
+    <h5>Advertising</h5>
+    <label><input type="radio" name="f-ads" data-log="F:r-ads-accept" checked> Accept</label>
+    <label><input type="radio" name="f-ads" data-log="F:r-ads-reject"> Reject</label>
+    <div style="margin-top:10px">
+      <button data-log="F:save" onclick="document.getElementById('prefsF').style.display='none';document.getElementById('bannerF').style.display='none'">Save changes</button>
+    </div>
+  </div>
+</div>
+
 <h3>Event log</h3>
 <div id="log"></div>
 <button onclick="resetAll()" style="margin-top:10px">Reset all</button>
@@ -89,15 +112,16 @@ The content script is included below via <code>&lt;script&gt;</code> to simulate
     if (b) tlog('clicked: ' + b.getAttribute('data-log') + '  ("' + (b.textContent||'').trim().slice(0,30) + '")');
   });
   function hideAll() {
-    for (const id of ['bannerA','bannerB','bannerC','CybotCookiebotDialog','prefsDialog'])
+    for (const id of ['bannerA','bannerB','bannerC','CybotCookiebotDialog','prefsDialog','bannerF','prefsF'])
       document.getElementById(id).style.display = 'none';
   }
   function showA(){ hideAll(); document.getElementById('bannerA').style.display='block'; }
   function showB(){ hideAll(); document.getElementById('bannerB').style.display='block'; }
   function showC(){ hideAll(); document.getElementById('bannerC').style.display='block'; }
   function showD(){ hideAll(); document.getElementById('CybotCookiebotDialog').style.display='block'; }
+  function showF(){ hideAll(); document.getElementById('bannerF').style.display='block'; }
   function resetAll(){ hideAll(); window.__testLog = []; document.getElementById('log').textContent=''; }
-  window.__testHelpers = { showA, showB, showC, showD, resetAll };
+  window.__testHelpers = { showA, showB, showC, showD, showF, resetAll };
 </script>
 <script src="../content.js"></script>
 </body>

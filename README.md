@@ -9,8 +9,8 @@ on any website. Source: https://github.com/MJVasya/consent-buttons (MIT).
   of digging through dialogs.
 - **Essential only** — the thorough path: tries "reject all" first; if the site
   offers no reject button it opens the preferences dialog, switches off every
-  optional category (analytics, marketing, …) while leaving strictly-necessary
-  ones alone, and saves.
+  optional category — checkboxes, toggles, and Accept/Reject radio pairs
+  (e.g. GitHub's) — while leaving strictly-necessary ones alone, and saves.
 
 A small floating pill appears automatically whenever a cookie banner is detected.
 The toolbar popup offers the same two buttons for the current tab.
