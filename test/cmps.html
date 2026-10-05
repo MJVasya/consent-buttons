@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Consent Buttons — CMP test page</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 760px; margin: 30px auto; padding: 0 16px; }
+  .scenario { border: 1px solid #ddd; border-radius: 10px; padding: 14px; margin: 14px 0; }
+  .fakebanner { background: #f4f4f6; border: 1px solid #ccc; border-radius: 8px; padding: 14px; margin-top: 10px; }
+  .fakebanner button { margin: 4px; padding: 8px 14px; }
+  #prefsDialog { background: #fff; border: 2px solid #888; border-radius: 8px; padding: 14px; margin-top: 10px; }
+  #log { background: #111; color: #0f0; padding: 12px; border-radius: 8px; min-height: 120px; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
+  .row label { display: block; margin: 6px 0; }
+</style>
+</head>
+<body>
+<h1>Consent Buttons — test page</h1>
+<p>Load with <code>?consenttest=1</code> so <code>window.__consent</code> is exposed.
+The content script is included below via <code>&lt;script&gt;</code> to simulate injection.</p>
+
+<div class="scenario">
+  <h3>A. OneTrust-style (known selectors)</h3>
+  <button onclick="showA()">Show banner</button>
+  <div id="bannerA" class="fakebanner" style="display:none; position:fixed; bottom:0; left:0; right:0;">
+    <p>We use cookies to improve your experience. <a href="#">Cookie Policy</a></p>
+    <button id="onetrust-accept-btn-handler" data-log="A:accept">Accept All Cookies</button>
+    <button id="onetrust-reject-all-handler" data-log="A:reject">Reject All</button>
+    <button id="onetrust-pc-btn-handler" data-log="A:prefs">Cookie Settings</button>
+  </div>
+</div>
+
+<div class="scenario">
+  <h3>B. Generic text buttons (heuristic path)</h3>
+  <button onclick="showB()">Show banner</button>
+  <div id="bannerB" class="fakebanner" style="display:none; position:fixed; bottom:0; left:0; right:0;">
+    <p>This site uses cookies. Please choose.</p>
+    <button data-log="B:accept">Accept all</button>
+    <button data-log="B:reject">Reject non-essential</button>
+  </div>
+</div>
+
+<div class="scenario">
+  <h3>C. Preferences-only (uncheck + save path)</h3>
+  <button onclick="showC()">Show banner</button>
+  <div id="bannerC" class="fakebanner" style="display:none; position:fixed; bottom:0; left:0; right:0;">
+    <p>We value your privacy. Manage your cookie choices.</p>
+    <button data-log="C:prefs" onclick="document.getElementById('prefsDialog').style.display='block'">Customize</button>
+  </div>
+  <div id="prefsDialog" style="display:none">
+    <h4>Cookie preferences</h4>
+    <div class="row">
+      <label><input type="checkbox" checked disabled data-log="C:cb-necessary"> Strictly Necessary (always on)</label>
+      <label><input type="checkbox" checked data-log="C:cb-analytics"> Analytics &amp; Performance</label>
+      <label><input type="checkbox" checked data-log="C:cb-marketing"> Marketing &amp; Targeting</label>
+    </div>
+    <button data-log="C:save" onclick="document.getElementById('prefsDialog').style.display='none';document.getElementById('bannerC').style.display='none'">Save selection</button>
+  </div>
+</div>
+
+<div class="scenario">
+  <h3>D. Cookiebot-style (known selectors)</h3>
+  <button onclick="showD()">Show banner</button>
+  <div id="CybotCookiebotDialog" class="fakebanner" style="display:none; position:fixed; bottom:0; left:0; right:0;">
+    <p>We use cookies to personalise content.</p>
+    <button id="CybotCookiebotDialogBodyButtonAccept" data-log="D:accept">Allow all</button>
+    <button id="CybotCookiebotDialogBodyButtonDecline" data-log="D:reject">Deny</button>
+    <button id="CybotCookiebotDialogBodyButtonDetails" data-log="D:prefs">Show details</button>
+  </div>
+</div>
+
+<div class="scenario">
+  <h3>E. Plain page (no banner — panel must stay hidden)</h3>
+  <p>Nothing to show here. Just article text about baking cookies (the edible kind).</p>
+</div>
+
+<h3>Event log</h3>
+<div id="log"></div>
+<button onclick="resetAll()" style="margin-top:10px">Reset all</button>
+
+<script>
+  window.__testLog = [];
+  function tlog(m) {
+    window.__testLog.push(m);
+    const el = document.getElementById('log');
+    el.textContent += m + '\n';
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-log]');
+    if (b) tlog('clicked: ' + b.getAttribute('data-log') + '  ("' + (b.textContent||'').trim().slice(0,30) + '")');
+  });
+  function hideAll() {
+    for (const id of ['bannerA','bannerB','bannerC','CybotCookiebotDialog','prefsDialog'])
+      document.getElementById(id).style.display = 'none';
+  }
+  function showA(){ hideAll(); document.getElementById('bannerA').style.display='block'; }
+  function showB(){ hideAll(); document.getElementById('bannerB').style.display='block'; }
+  function showC(){ hideAll(); document.getElementById('bannerC').style.display='block'; }
+  function showD(){ hideAll(); document.getElementById('CybotCookiebotDialog').style.display='block'; }
+  function resetAll(){ hideAll(); window.__testLog = []; document.getElementById('log').textContent=''; }
+  window.__testHelpers = { showA, showB, showC, showD, resetAll };
+</script>
+<script src="../content.js"></script>
+</body>
+</html>
